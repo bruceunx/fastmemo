@@ -1,0 +1,89 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macOS x64
+          - os: macos-latest
+            target: x86_64-macos
+            artifact_name: fastmemo-x86_64-macos
+            zig_os: macos
+          # macOS ARM64
+          - os: macos-latest
+            target: aarch64-macos
+            artifact_name: fastmemo-aarch64-macos
+            zig_os: macos
+          # Linux x64
+          - os: ubuntu-latest
+            target: x86_64-linux-gnu
+            artifact_name: fastmemo-x86_64-linux
+            zig_os: linux
+          # Windows x64 (cross-compiled from Linux)
+          - os: ubuntu-latest
+            target: x86_64-windows-gnu
+            artifact_name: fastmemo-x86_64-windows.exe
+            zig_os: linux
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Zig
+        run: |
+          curl -L https://ziglang.org/download/0.15.2/zig-${{ matrix.zig_os }}-x86_64-0.15.2.tar.xz -o /tmp/zig.tar.xz
+          tar -xf /tmp/zig.tar.xz -C /tmp
+          echo "/tmp/zig-${{ matrix.zig_os }}-x86_64-0.15.2" >> $GITHUB_PATH
+
+      - name: Build
+        run: |
+          zig build -Dtarget=${{ matrix.target }} -Doptimize=release-small
+
+      - name: Prepare artifact
+        run: |
+          mkdir -p dist
+          if [[ "${{ matrix.target }}" == *"windows"* ]]; then
+            cp zig-out/bin/fastmemo.exe "dist/${{ matrix.artifact_name }}"
+            cp zig-out/bin/fastmemo-mcp.exe "dist/${{ matrix.artifact_name }}-mcp.exe"
+          else
+            cp zig-out/bin/fastmemo "dist/${{ matrix.artifact_name }}"
+            cp zig-out/bin/fastmemo-mcp "dist/${{ matrix.artifact_name }}-mcp"
+          fi
+          ls -la dist/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/*
+
+  create-release:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: ls -laR artifacts/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
