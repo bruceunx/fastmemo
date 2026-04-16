@@ -94,8 +94,9 @@ pub const Miner = struct {
         defer self.alloc.free(content);
 
         if (content.len < 10) return;
-
+        const wing_allocated = opts.wing == null;
         const wing = opts.wing orelse detectWing(self.alloc, file_path) catch "wing_general";
+        defer if (wing_allocated) self.alloc.free(wing);
         const room = detectRoom(file_path, filename, content);
         const hall = switch (opts.mode) {
             .general => classifyHall(content),
@@ -115,7 +116,6 @@ pub const Miner = struct {
         for (chunks, 0..) |ch, i| {
             const id = storage.computeDrawerId(self.alloc, wing, room, file_path, @intCast(i)) catch return MineError.OutOfMemory;
             defer self.alloc.free(id);
-
             const importance = scoreImportance(ch);
             const drawer = storage.Drawer{
                 .id = id,
@@ -166,8 +166,10 @@ pub fn chunk(alloc: std.mem.Allocator, content: []const u8) MineError![][]u8 {
         if (slice.len >= MIN_CHUNK)
             try chunks.append(alloc.dupe(u8, slice) catch return MineError.OutOfMemory);
         if (end >= content.len) break;
-        start = if (end > CHUNK_OVERLAP) end - CHUNK_OVERLAP else 0;
+
+        start = @max(if (end > CHUNK_OVERLAP) end - CHUNK_OVERLAP else 0, start + 1);
     }
+
     return chunks.toOwnedSlice() catch return MineError.OutOfMemory;
 }
 
