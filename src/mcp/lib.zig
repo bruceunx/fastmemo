@@ -107,8 +107,8 @@ pub const Server = struct {
 
     /// Run the server: read JSON-RPC from stdin, write to stdout.
     pub fn run(self: *Server) !void {
-        const stdin = std.io.getStdIn().reader();
-        const stdout = std.io.getStdOut().writer();
+        const stdin = std.fs.File.stdin().deprecatedReader();
+        const stdout = std.fs.File.stdout().deprecatedWriter();
         var buf: [65536]u8 = undefined;
 
         while (true) {
@@ -157,7 +157,7 @@ pub const Server = struct {
     }
 
     fn callTool(self: *Server, tool: []const u8, params_json: []const u8, id: ?i64, w: anytype, a: std.mem.Allocator) !void {
-        var out = std.ArrayList(u8).init(self.alloc);
+        var out = std.array_list.Managed(u8).init(self.alloc);
         defer out.deinit();
         const ow = out.writer();
 
@@ -210,7 +210,7 @@ pub const Server = struct {
             }
             try ow.print("{d} results for \"{s}\":\n\n", .{ results.len, query });
             for (results) |r| {
-                try ow.print("[{s:.3}] {s}/{s}\n{s}\n---\n", .{ r.score, r.wing, r.room, r.content_snippet });
+                try ow.print("[{d:.3}] {s}/{s}\n{s}\n---\n", .{ r.score, r.wing, r.room, r.content_snippet });
             }
         } else if (std.mem.eql(u8, tool, "mempalace_add_drawer")) {
             const wing_p = (extractJsonStr(a, params_json, "\"wing\"") catch null) orelse "wing_general";
@@ -226,6 +226,8 @@ pub const Server = struct {
                 return;
             };
             defer self.alloc.free(drawer_id);
+            const now = isoNow(self.alloc) catch try self.alloc.dupe(u8, "1970-01-01");
+            defer self.alloc.free(now);
             const drawer = storage.Drawer{
                 .id = drawer_id,
                 .wing = wing_p,
@@ -235,7 +237,7 @@ pub const Server = struct {
                 .source_file = src,
                 .chunk_index = 0,
                 .added_by = "mcp",
-                .filed_at = "2026-01-01",
+                .filed_at = now,
                 .importance = 0.5,
                 .emotional_weight = 0.0,
             };
@@ -406,6 +408,8 @@ pub const Server = struct {
                 return;
             };
             defer self.alloc.free(drawer_id);
+            const now2 = isoNow(self.alloc) catch try self.alloc.dupe(u8, "1970-01-01");
+            defer self.alloc.free(now2);
             const drawer = storage.Drawer{
                 .id = drawer_id,
                 .wing = wing,
@@ -415,7 +419,7 @@ pub const Server = struct {
                 .source_file = "diary",
                 .chunk_index = 0,
                 .added_by = agent_id,
-                .filed_at = "2026-01-01",
+                .filed_at = now2,
                 .importance = 0.7,
                 .emotional_weight = 0.0,
             };
@@ -481,23 +485,52 @@ pub const Server = struct {
 
 // ─── Minimal JSON field extractors ───────────────────────────────────────────
 
-/// Extract a string value for a key from JSON (simple scan, not a full parser).
+/// Correct Gregorian date string from Unix epoch. Caller frees.
+fn isoNow(alloc: std.mem.Allocator) ![]u8 {
+    const epoch_s = @divFloor(std.time.milliTimestamp(), 1000);
+    const z: i64 = @divFloor(epoch_s, 86400) + 719468;
+    const era: i64 = @divFloor(if (z >= 0) z else z - 146096, 146097);
+    const doe: i64 = z - era * 146097;
+    const yoe: i64 = @divFloor(doe - @divFloor(doe, 1460) + @divFloor(doe, 36524) - @divFloor(doe, 146096), 365);
+    const y: i64 = yoe + era * 400;
+    const doy: i64 = doe - (365 * yoe + @divFloor(yoe, 4) - @divFloor(yoe, 100));
+    const mp: i64 = @divFloor(5 * doy + 2, 153);
+    const d: i64 = doy - @divFloor(153 * mp + 2, 5) + 1;
+    const m: i64 = if (mp < 10) mp + 3 else mp - 9;
+    const year: i64 = if (m <= 2) y + 1 else y;
+    return std.fmt.allocPrint(alloc, "{d:04}-{d:02}-{d:02}", .{ year, m, d });
+}
+
+/// Extract a string value for a key from JSON, unescaping backslash sequences.
 fn extractJsonStr(alloc: std.mem.Allocator, json: []const u8, key: []const u8) !?[]u8 {
     const pos = std.mem.indexOf(u8, json, key) orelse return null;
     var i = pos + key.len;
     while (i < json.len and (json[i] == ' ' or json[i] == ':')) i += 1;
     if (i >= json.len or json[i] != '"') return null;
     i += 1; // skip opening quote
-    var end = i;
-    while (end < json.len) {
-        if (json[end] == '\\') {
-            end += 2;
-            continue;
+    // Build unescaped output
+    var out = std.array_list.Managed(u8).init(alloc);
+    errdefer out.deinit();
+    while (i < json.len and json[i] != '"') {
+        if (json[i] == '\\' and i + 1 < json.len) {
+            i += 1;
+            switch (json[i]) {
+                '"' => try out.append('"'),
+                '\\' => try out.append('\\'),
+                '/' => try out.append('/'),
+                'n' => try out.append('\n'),
+                'r' => try out.append('\r'),
+                't' => try out.append('\t'),
+                'b' => try out.append(0x08),
+                'f' => try out.append(0x0C),
+                else => { try out.append('\\'); try out.append(json[i]); },
+            }
+        } else {
+            try out.append(json[i]);
         }
-        if (json[end] == '"') break;
-        end += 1;
+        i += 1;
     }
-    return try alloc.dupe(u8, json[i..end]);
+    return try out.toOwnedSlice();
 }
 
 fn extractJsonInt(json: []const u8, key: []const u8) ?i64 {

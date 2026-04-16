@@ -53,11 +53,11 @@ pub const PalaceGraph = struct {
             try gop.value_ptr.put(d.wing, {});
         }
 
-        var tunnels = std.ArrayList(Tunnel).init(self.alloc);
+        var tunnels = std.array_list.Managed(Tunnel).init(self.alloc);
         var it = room_wings.iterator();
         while (it.next()) |kv| {
             if (kv.value_ptr.count() < 2) continue;
-            var wings_list = std.ArrayList([]const u8).init(self.alloc);
+            var wings_list = std.array_list.Managed([]const u8).init(self.alloc);
             var wit = kv.value_ptr.keyIterator();
             while (wit.next()) |w| try wings_list.append(try self.alloc.dupe(u8, w.*));
             try tunnels.append(Tunnel{
@@ -82,13 +82,13 @@ pub const PalaceGraph = struct {
 
         var visited = std.StringHashMap(void).init(self.alloc);
         defer visited.deinit();
-        var queue = std.ArrayList([]const u8).init(self.alloc);
+        var queue = std.array_list.Managed([]const u8).init(self.alloc);
         defer queue.deinit();
 
         try queue.append(start_room);
         try visited.put(start_room, {});
 
-        var results = std.ArrayList(RoomNode).init(self.alloc);
+        var results = std.array_list.Managed(RoomNode).init(self.alloc);
         var hops: u32 = 0;
 
         while (queue.items.len > 0 and hops < max_hops) : (hops += 1) {

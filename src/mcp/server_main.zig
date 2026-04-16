@@ -14,10 +14,10 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(alloc);
     defer std.process.argsFree(alloc, args);
 
+    var palace_path_buf: [512]u8 = undefined;
     var palace_path: []const u8 = blk: {
-        var home_buf: [512]u8 = undefined;
         const home = std.posix.getenv("HOME") orelse "/tmp";
-        break :blk try std.fmt.bufPrint(&home_buf, "{s}/.mempalace/palace", .{home});
+        break :blk try std.fmt.bufPrint(&palace_path_buf, "{s}/.mempalace/palace", .{home});
     };
 
     var i: usize = 1;

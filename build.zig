@@ -71,6 +71,7 @@ pub fn build(b: *std.Build) void {
     mcp_server.root_module.addImport("graph", graph_mod);
     mcp_server.root_module.addImport("aaak", aaak_mod);
     mcp_server.root_module.addImport("mcp", mcp_mod);
+    linkSqlite.link(mcp_server);
     b.installArtifact(mcp_server);
 
     // Run step
@@ -93,6 +94,7 @@ pub fn build(b: *std.Build) void {
     unit_tests.root_module.addImport("graph", graph_mod);
     unit_tests.root_module.addImport("aaak", aaak_mod);
     unit_tests.root_module.addImport("mining", mining_mod);
+    linkSqlite.link(unit_tests);
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&b.addRunArtifact(unit_tests).step);

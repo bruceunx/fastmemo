@@ -132,7 +132,7 @@ pub const DrawerStore = struct {
             \\CREATE INDEX IF NOT EXISTS idx_drawers_source ON drawers(source_file);
         ;
         var errmsg: ?[*:0]u8 = null;
-        if (c.sqlite3_exec(self.db, ddl, null, null, &errmsg) != c.SQLITE_OK) {
+        if (c.sqlite3_exec(self.db, ddl, null, null, @ptrCast(&errmsg)) != c.SQLITE_OK) {
             return StorageError.ExecFailed;
         }
     }
@@ -226,7 +226,7 @@ pub const DrawerStore = struct {
             _ = c.sqlite3_bind_text(stmt, bind_idx, r.ptr, @intCast(r.len), c.SQLITE_STATIC);
         }
 
-        var list = std.ArrayList(Drawer).init(alloc);
+        var list = std.array_list.Managed(Drawer).init(alloc);
         while (c.sqlite3_step(stmt) == c.SQLITE_ROW) {
             const drawer = try rowToDrawer(alloc, stmt.?);
             try list.append(drawer);
@@ -239,7 +239,7 @@ pub const DrawerStore = struct {
         var stmt: ?*c.sqlite3_stmt = null;
         if (c.sqlite3_prepare_v2(self.db, sql, -1, &stmt, null) != c.SQLITE_OK) return StorageError.PrepareFailed;
         defer _ = c.sqlite3_finalize(stmt);
-        var list = std.ArrayList([]u8).init(alloc);
+        var list = std.array_list.Managed([]u8).init(alloc);
         while (c.sqlite3_step(stmt) == c.SQLITE_ROW) {
             const raw = c.sqlite3_column_text(stmt, 0);
             const s = std.mem.span(raw);
@@ -259,7 +259,7 @@ pub const DrawerStore = struct {
             if (c.sqlite3_prepare_v2(self.db, sql, -1, &stmt, null) != c.SQLITE_OK) return StorageError.PrepareFailed;
         }
         defer _ = c.sqlite3_finalize(stmt);
-        var list = std.ArrayList([]u8).init(alloc);
+        var list = std.array_list.Managed([]u8).init(alloc);
         while (c.sqlite3_step(stmt) == c.SQLITE_ROW) {
             const raw = c.sqlite3_column_text(stmt, 0);
             const s = std.mem.span(raw);
@@ -360,7 +360,7 @@ pub const KnowledgeGraph = struct {
             \\CREATE INDEX IF NOT EXISTS idx_triples_valid ON triples(valid_from, valid_to);
         ;
         var errmsg: ?[*:0]u8 = null;
-        if (c.sqlite3_exec(self.db, ddl, null, null, &errmsg) != c.SQLITE_OK)
+        if (c.sqlite3_exec(self.db, ddl, null, null, @ptrCast(&errmsg)) != c.SQLITE_OK)
             return StorageError.ExecFailed;
     }
 
@@ -476,7 +476,7 @@ pub const KnowledgeGraph = struct {
     }
 
     fn collectTriples(alloc: std.mem.Allocator, stmt: *c.sqlite3_stmt) StorageError![]Triple {
-        var list = std.ArrayList(Triple).init(alloc);
+        var list = std.array_list.Managed(Triple).init(alloc);
         while (c.sqlite3_step(stmt) == c.SQLITE_ROW) {
             const t = Triple{
                 .subject = try dupeCol(alloc, stmt, 0),

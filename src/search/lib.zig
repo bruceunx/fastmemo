@@ -49,6 +49,8 @@ pub const Searcher = struct {
         return .{ .store = store, .alloc = alloc };
     }
 
+    const ScoredItem = struct { idx: usize, score: f32 };
+
     /// Run hybrid search. Returns results sorted by descending score.
     pub fn search(
         self: *Searcher,
@@ -97,7 +99,7 @@ pub const Searcher = struct {
         }
 
         // Score each candidate
-        var scored = std.ArrayList(struct { idx: usize, score: f32 }).init(self.alloc);
+        var scored = std.array_list.Managed(ScoredItem).init(self.alloc);
         defer scored.deinit();
 
         for (candidates, 0..) |d, i| {
@@ -111,18 +113,18 @@ pub const Searcher = struct {
 
         // Sort descending
         std.sort.pdq(
-            struct { idx: usize, score: f32 },
+            ScoredItem,
             scored.items,
             {},
             struct {
-                fn lt(_: void, a: anytype, b: anytype) bool {
+                fn lt(_: void, a: ScoredItem, b: ScoredItem) bool {
                     return a.score > b.score;
                 }
             }.lt,
         );
 
         const limit = @min(n_results, scored.items.len);
-        var results = std.ArrayList(SearchResult).init(self.alloc);
+        var results = std.array_list.Managed(SearchResult).init(self.alloc);
         for (scored.items[0..limit]) |s| {
             const d = &candidates[s.idx];
             const snippet_end = @min(d.content.len, 200);
@@ -201,7 +203,7 @@ fn countOccurrences(haystack: []const u8, needle: []const u8) usize {
 }
 
 fn tokenize(alloc: std.mem.Allocator, text: []const u8) ![][]u8 {
-    var tokens = std.ArrayList([]u8).init(alloc);
+    var tokens = std.array_list.Managed([]u8).init(alloc);
     var iter = std.mem.tokenizeAny(u8, text, " \t\n\r.,;:!?\"'()[]{}");
     while (iter.next()) |word| {
         if (word.len < 2) continue;

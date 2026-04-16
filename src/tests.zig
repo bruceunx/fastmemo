@@ -193,7 +193,7 @@ test "aaak compress and format" {
 test "mining chunk sizes" {
     const alloc = std.testing.allocator;
     // Build a 3000-char string
-    var content = try alloc.alloc(u8, 3000);
+    const content = try alloc.alloc(u8, 3000);
     defer alloc.free(content);
     for (content, 0..) |*b, idx| b.* = if (idx % 100 == 99) '\n' else 'a';
 

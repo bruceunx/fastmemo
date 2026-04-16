@@ -71,7 +71,7 @@ pub fn compress(
     known_entities: std.StringHashMap([]const u8), // name → 3-char code
 ) !AaakEntry {
     // 1. Entity detection
-    var detected = std.ArrayList(u8).init(alloc);
+    var detected = std.array_list.Managed(u8).init(alloc);
     defer detected.deinit();
     var entity_count: u32 = 0;
 
@@ -122,7 +122,7 @@ pub fn compress(
             if (best[1].count > best[0].count) std.mem.swap(@TypeOf(best[0]), &best[0], &best[1]);
         }
     }
-    var topic_buf = std.ArrayList(u8).init(alloc);
+    var topic_buf = std.array_list.Managed(u8).init(alloc);
     defer topic_buf.deinit();
     for (best) |b| {
         if (b.word.len == 0) continue;

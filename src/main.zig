@@ -45,8 +45,8 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(alloc);
     defer std.process.argsFree(alloc, args);
 
-    const stderr = std.io.getStdErr().writer();
-    const stdout = std.io.getStdOut().writer();
+    const stderr = std.fs.File.stderr().deprecatedWriter();
+    const stdout = std.fs.File.stdout().deprecatedWriter();
 
     if (args.len < 2) {
         try stdout.print(USAGE, .{VERSION});
@@ -59,7 +59,7 @@ pub fn main() !void {
         const home = std.posix.getenv("HOME") orelse "/tmp";
         break :blk try std.fmt.bufPrint(&palace_path_buf, "{s}/.mempalace/palace", .{home});
     };
-    var remaining = std.ArrayList([]const u8).init(alloc);
+    var remaining = std.array_list.Managed([]const u8).init(alloc);
     defer remaining.deinit();
     var i: usize = 1;
     while (i < args.len) : (i += 1) {
@@ -177,7 +177,9 @@ pub fn main() !void {
             for (wings) |w| alloc.free(w);
             alloc.free(wings);
         }
-        const kg_stats = palace.kg.stats() catch .{ .entities = 0, .triples = 0, .active = 0 };
+        const kg_stats = palace.kg.stats() catch blk: {
+            break :blk @TypeOf(palace.kg.stats() catch unreachable){ .entities = 0, .triples = 0, .active = 0 };
+        };
         try stdout.print(
             \\MemPalace {s}
             \\Palace: {s}
@@ -317,7 +319,9 @@ pub fn main() !void {
             };
             try stdout.print("Invalidated: {s} → {s} → {s}\n", .{ subj, pred, obj });
         } else if (std.mem.eql(u8, sub, "stats")) {
-            const s = palace.kg.stats() catch .{ .entities = 0, .triples = 0, .active = 0 };
+            const s = palace.kg.stats() catch blk: {
+                break :blk @TypeOf(palace.kg.stats() catch unreachable){ .entities = 0, .triples = 0, .active = 0 };
+            };
             try stdout.print("Entities: {d}\nTotal: {d}\nActive: {d}\n", .{ s.entities, s.triples, s.active });
         }
     } else {

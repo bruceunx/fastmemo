@@ -144,7 +144,7 @@ const MIN_CHUNK: usize = 50;
 
 /// Split content into overlapping chunks. Caller owns result.
 pub fn chunk(alloc: std.mem.Allocator, content: []const u8) MineError![][]u8 {
-    var chunks = std.ArrayList([]u8).init(alloc);
+    var chunks = std.array_list.Managed([]u8).init(alloc);
     if (content.len <= CHUNK_SIZE) {
         if (content.len >= MIN_CHUNK)
             try chunks.append(alloc.dupe(u8, content) catch return MineError.OutOfMemory);
@@ -287,15 +287,19 @@ fn readFile(alloc: std.mem.Allocator, path: []const u8) ![]u8 {
 }
 
 fn isoNow(alloc: std.mem.Allocator) ![]u8 {
-    const epoch_ms = std.time.milliTimestamp();
-    const epoch_s = @divFloor(epoch_ms, 1000);
-    const days = @divFloor(epoch_s, 86400);
-    // Approximate date from epoch (good enough for labels)
-    const year = 1970 + @divFloor(days, 365);
-    const day_of_year = @mod(days, 365);
-    const month = @divFloor(day_of_year, 30) + 1;
-    const day = @mod(day_of_year, 30) + 1;
-    return std.fmt.allocPrint(alloc, "{d:04}-{d:02}-{d:02}", .{ year, month, day });
+    const epoch_s = @divFloor(std.time.milliTimestamp(), 1000);
+    // Correct Gregorian calendar from Unix epoch (civil_from_days algorithm)
+    const z: i64 = @divFloor(epoch_s, 86400) + 719468;
+    const era: i64 = @divFloor(if (z >= 0) z else z - 146096, 146097);
+    const doe: i64 = z - era * 146097;
+    const yoe: i64 = @divFloor(doe - @divFloor(doe, 1460) + @divFloor(doe, 36524) - @divFloor(doe, 146096), 365);
+    const y: i64 = yoe + era * 400;
+    const doy: i64 = doe - (365 * yoe + @divFloor(yoe, 4) - @divFloor(yoe, 100));
+    const mp: i64 = @divFloor(5 * doy + 2, 153);
+    const d: i64 = doy - @divFloor(153 * mp + 2, 5) + 1;
+    const m: i64 = if (mp < 10) mp + 3 else mp - 9;
+    const year: i64 = if (m <= 2) y + 1 else y;
+    return std.fmt.allocPrint(alloc, "{d:04}-{d:02}-{d:02}", .{ year, m, d });
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
