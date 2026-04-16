@@ -37,7 +37,7 @@ pub fn build(b: *std.Build) void {
 
     // Main CLI executable
     const exe = b.addExecutable(.{
-        .name = "mempalace",
+        .name = "fastmemo",
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = target,
@@ -59,7 +59,7 @@ pub fn build(b: *std.Build) void {
 
     // MCP server binary (stdio transport)
     const mcp_server = b.addExecutable(.{
-        .name = "mempalace-mcp",
+        .name = "fastmemo-mcp",
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/mcp/server_main.zig"),
             .target = target,
