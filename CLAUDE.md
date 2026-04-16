@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build Commands
 
 ```bash
-# Build both binaries (mempalace CLI + mempalace-mcp server)
+# Build both binaries (fastmemo CLI + fastmemo-mcp server)
 zig build
 
 # Run all tests
@@ -18,7 +18,7 @@ zig build test -- --test-filter "drawer store open/insert/query"
 zig build run -- <command> [args]
 
 # Run with a custom palace path
-./zig-out/bin/mempalace --palace /tmp/mypalace <command>
+./zig-out/bin/fastmemo --palace /tmp/mypalace <command>
 ```
 
 **System requirement**: `sqlite3` must be installed (`brew install sqlite3` on macOS). The build links against `libsqlite3` and `libc`.
@@ -29,8 +29,8 @@ zig build run -- <command> [args]
 
 This is a Zig port of **MemPalace v3.1.0**, a local AI memory system. It produces two binaries:
 
-- `mempalace` — CLI with commands: `init`, `mine`, `search`, `status`, `wake-up`, `kg`, `mcp`, `version`
-- `mempalace-mcp` — JSON-RPC 2.0 MCP server over stdio, exposing 19 tools to AI agents
+- `fastmemo` — CLI with commands: `init`, `mine`, `search`, `status`, `wake-up`, `kg`, `mcp`, `version`
+- `fastmemo-mcp` — JSON-RPC 2.0 MCP server over stdio, exposing 19 tools to AI agents
 
 ### Module Dependency Graph
 
@@ -78,20 +78,20 @@ All returned slices are caller-owned. Every struct that allocates has a `deinit(
 ## CLI Command Reference
 
 ```
-mempalace init <dir>                    # Initialize palace + mine dir
-mempalace mine <dir> [--mode MODE] [--wing NAME]  # MODE: projects|convos|general
-mempalace search <query> [--wing W] [--room R] [--n N]
-mempalace status
-mempalace wake-up [--wing W]            # Print L0 identity + L1 top-15 drawers
-mempalace kg add <subj> <pred> <obj> [--from DATE]
-mempalace kg query <entity> [--as-of DATE]
-mempalace kg timeline <entity>
-mempalace kg invalidate <subj> <pred> <obj> --ended DATE
-mempalace kg stats
-mempalace mcp                           # Print MCP server setup command
+fastmemo init <dir>                    # Initialize palace + mine dir
+fastmemo mine <dir> [--mode MODE] [--wing NAME]  # MODE: projects|convos|general
+fastmemo search <query> [--wing W] [--room R] [--n N]
+fastmemo status
+fastmemo wake-up [--wing W]            # Print L0 identity + L1 top-15 drawers
+fastmemo kg add <subj> <pred> <obj> [--from DATE]
+fastmemo kg query <entity> [--as-of DATE]
+fastmemo kg timeline <entity>
+fastmemo kg invalidate <subj> <pred> <obj> --ended DATE
+fastmemo kg stats
+fastmemo mcp                           # Print MCP server setup command
 ```
 
-Default palace path: `~/.mempalace/palace`. Override with `--palace <path>` before the command.
+Default palace path: `~/.fastmemo/palace`. Override with `--palace <path>` before the command.
 
 ## Known Limitations (from SPEC.md)
 

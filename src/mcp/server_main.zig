@@ -17,7 +17,7 @@ pub fn main() !void {
     var palace_path_buf: [512]u8 = undefined;
     var palace_path: []const u8 = blk: {
         const home = std.posix.getenv("HOME") orelse "/tmp";
-        break :blk try std.fmt.bufPrint(&palace_path_buf, "{s}/.mempalace/palace", .{home});
+        break :blk try std.fmt.bufPrint(&palace_path_buf, "{s}/.fastmemo/palace", .{home});
     };
 
     var i: usize = 1;

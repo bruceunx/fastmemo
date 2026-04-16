@@ -1,4 +1,4 @@
-# FastMemory — Zig Port
+# FastMemo — Zig Port
 
 A full Zig implementation of the MemPalace AI memory system. Zero runtime dependencies beyond `sqlite3`.
 

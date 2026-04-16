@@ -12,7 +12,7 @@ const VERSION = "3.1.0";
 const USAGE =
     \\fastmemo v{s} — local AI memory system (Zig port)
     \\
-    \\Usage: mempalace <command> [options]
+    \\Usage: fastmemo <command> [options]
     \\
     \\Commands:
     \\  init   <dir>                  Initialize palace in directory
@@ -33,7 +33,7 @@ const USAGE =
     \\  version                       Print version
     \\
     \\Options:
-    \\  --palace PATH     Override palace path (default: ~/.mempalace/palace)
+    \\  --palace PATH     Override palace path (default: ~/.fastmemo/palace)
     \\
 ;
 
@@ -57,7 +57,7 @@ pub fn main() !void {
     var palace_path_buf: [1024]u8 = undefined;
     var palace_path: []const u8 = blk: {
         const home = std.posix.getenv("HOME") orelse "/tmp";
-        break :blk try std.fmt.bufPrint(&palace_path_buf, "{s}/.mempalace/palace", .{home});
+        break :blk try std.fmt.bufPrint(&palace_path_buf, "{s}/.fastmemo/palace", .{home});
     };
     var remaining = std.array_list.Managed([]const u8).init(alloc);
     defer remaining.deinit();
@@ -74,14 +74,14 @@ pub fn main() !void {
     const cmd = remaining.items[0];
 
     if (std.mem.eql(u8, cmd, "version")) {
-        try stdout.print("mempalace {s}\n", .{VERSION});
+        try stdout.print("fastmemo {s}\n", .{VERSION});
         return;
     }
 
     if (std.mem.eql(u8, cmd, "mcp")) {
-        try stdout.print("mempalace-mcp --palace {s}\n", .{palace_path});
+        try stdout.print("fastmemo-mcp --palace {s}\n", .{palace_path});
         try stdout.writeAll("Add to your MCP config:\n");
-        try stdout.print("  command: mempalace-mcp\n  args: [\"--palace\", \"{s}\"]\n", .{palace_path});
+        try stdout.print("  command: fastmemo-mcp\n  args: [\"--palace\", \"{s}\"]\n", .{palace_path});
         return;
     }
 
@@ -105,7 +105,7 @@ pub fn main() !void {
     }
 
     var palace = storage.Palace.open(alloc, palace_path) catch |err| {
-        try stderr.print("Failed to open palace at {s}: {}\nRun: mempalace init\n", .{ palace_path, err });
+        try stderr.print("Failed to open palace at {s}: {}\nRun: fastmemo init\n", .{ palace_path, err });
         return;
     };
     defer palace.close();
@@ -132,7 +132,7 @@ pub fn main() !void {
         });
     } else if (std.mem.eql(u8, cmd, "search")) {
         if (remaining.items.len < 2) {
-            try stderr.writeAll("Usage: mempalace search <query>\n");
+            try stderr.writeAll("Usage: fastmemo search <query>\n");
             return;
         }
         const query = remaining.items[1];
@@ -192,12 +192,12 @@ pub fn main() !void {
         // L0: identity
         var identity_path_buf: [1024]u8 = undefined;
         const home = std.posix.getenv("HOME") orelse "/tmp";
-        const id_path = try std.fmt.bufPrint(&identity_path_buf, "{s}/.mempalace/identity.txt", .{home});
+        const id_path = try std.fmt.bufPrint(&identity_path_buf, "{s}/.fastmemo/identity.txt", .{home});
         if (std.fs.cwd().readFileAlloc(alloc, id_path, 4096)) |identity| {
             defer alloc.free(identity);
             try stdout.print("=== L0: Identity ===\n{s}\n\n", .{identity});
         } else |_| {
-            try stdout.writeAll("=== L0: Identity ===\n(no identity.txt found — create ~/.mempalace/identity.txt)\n\n");
+            try stdout.writeAll("=== L0: Identity ===\n(no identity.txt found — create ~/.fastmemo/identity.txt)\n\n");
         }
         // L1: top-15 by importance
         var wing_filter: ?[]const u8 = null;
@@ -218,13 +218,13 @@ pub fn main() !void {
         }
     } else if (std.mem.eql(u8, cmd, "kg")) {
         if (remaining.items.len < 2) {
-            try stderr.writeAll("Usage: mempalace kg <add|query|timeline|invalidate|stats>\n");
+            try stderr.writeAll("Usage: fastmemo kg <add|query|timeline|invalidate|stats>\n");
             return;
         }
         const sub = remaining.items[1];
         if (std.mem.eql(u8, sub, "add")) {
             if (remaining.items.len < 5) {
-                try stderr.writeAll("Usage: mempalace kg add <subject> <predicate> <object> [--from DATE]\n");
+                try stderr.writeAll("Usage: fastmemo kg add <subject> <predicate> <object> [--from DATE]\n");
                 return;
             }
             const subj = remaining.items[2];
@@ -245,7 +245,7 @@ pub fn main() !void {
             try stdout.print("Added: {s} → {s} → {s}\n", .{ subj, pred, obj });
         } else if (std.mem.eql(u8, sub, "query")) {
             if (remaining.items.len < 3) {
-                try stderr.writeAll("Usage: mempalace kg query <entity> [--as-of DATE]\n");
+                try stderr.writeAll("Usage: fastmemo kg query <entity> [--as-of DATE]\n");
                 return;
             }
             const entity = remaining.items[2];
@@ -277,7 +277,7 @@ pub fn main() !void {
             }
         } else if (std.mem.eql(u8, sub, "timeline")) {
             if (remaining.items.len < 3) {
-                try stderr.writeAll("Usage: mempalace kg timeline <entity>\n");
+                try stderr.writeAll("Usage: fastmemo kg timeline <entity>\n");
                 return;
             }
             const entity = remaining.items[2];
@@ -299,7 +299,7 @@ pub fn main() !void {
             }
         } else if (std.mem.eql(u8, sub, "invalidate")) {
             if (remaining.items.len < 5) {
-                try stderr.writeAll("Usage: mempalace kg invalidate <subj> <pred> <obj> --ended DATE\n");
+                try stderr.writeAll("Usage: fastmemo kg invalidate <subj> <pred> <obj> --ended DATE\n");
                 return;
             }
             const subj = remaining.items[2];

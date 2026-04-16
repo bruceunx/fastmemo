@@ -140,7 +140,7 @@ pub const Server = struct {
         };
 
         if (std.mem.eql(u8, m, "initialize")) {
-            try w.print("{{\"jsonrpc\":\"2.0\",\"id\":{?},\"result\":{{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{{\"tools\":{{}}}},\"serverInfo\":{{\"name\":\"mempalace\",\"version\":\"3.1.0\"}}}}}}\n", .{id});
+            try w.print("{{\"jsonrpc\":\"2.0\",\"id\":{?},\"result\":{{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{{\"tools\":{{}}}},\"serverInfo\":{{\"name\":\"fastmemo\",\"version\":\"3.1.0\"}}}}}}\n", .{id});
         } else if (std.mem.eql(u8, m, "tools/list")) {
             try w.print("{{\"jsonrpc\":\"2.0\",\"id\":{?},\"result\":{{\"tools\":{s}}}}}\n", .{ id, TOOLS_JSON });
         } else if (std.mem.eql(u8, m, "tools/call")) {
@@ -163,7 +163,7 @@ pub const Server = struct {
 
         if (std.mem.eql(u8, tool, "mempalace_status")) {
             const count = self.palace.drawers.count() catch 0;
-            try ow.print("MemPalace v3.1.0 (Zig)\n\nPalace path: {s}\nDrawers: {d}\n\n{s}\n\n{s}", .{
+            try ow.print("FastMemo v3.1.0 (Zig)\n\nPalace path: {s}\nDrawers: {d}\n\n{s}\n\n{s}", .{
                 self.palace.path, count, PALACE_PROTOCOL, AAAK_SPEC,
             });
         } else if (std.mem.eql(u8, tool, "mempalace_list_wings")) {
