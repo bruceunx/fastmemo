@@ -25,40 +25,40 @@ zig build test               # run test suite
 
 Produces two binaries in `zig-out/bin/`:
 
-- `mempalace` — CLI
-- `mempalace-mcp` — MCP server (JSON-RPC 2.0 over stdio)
+- `fastmemo` — CLI
+- `fastmemo-mcp` — MCP server (JSON-RPC 2.0 over stdio)
 
 ## Usage
 
 ```bash
 # Initialize and mine a project
-mempalace init ~/projects/myapp
+fastmemo init ~/projects/myapp
 
 # Mine conversation exports
-mempalace mine ~/chats/ --mode convos --wing myapp
+fastmemo mine ~/chats/ --mode convos --wing myapp
 
 # Search
-mempalace search "why did we switch to GraphQL"
-mempalace search "auth migration" --wing wing_myapp --n 10
+fastmemo search "why did we switch to GraphQL"
+fastmemo search "auth migration" --wing wing_myapp --n 10
 
 # Status overview
-mempalace status
+fastmemo status
 
 # Wake-up context (L0+L1, ~170 tokens)
-mempalace wake-up
-mempalace wake-up --wing wing_myapp
+fastmemo wake-up
+fastmemo wake-up --wing wing_myapp
 
 # Knowledge graph
-mempalace kg add "Alice" "works_on" "Orion" --from 2025-06-01
-mempalace kg query "Alice"
-mempalace kg query "Alice" --as-of 2026-01-01
-mempalace kg timeline "Orion"
-mempalace kg invalidate "Alice" "works_on" "Orion" --ended 2026-03-01
-mempalace kg stats
+fastmemo kg add "Alice" "works_on" "Orion" --from 2025-06-01
+fastmemo kg query "Alice"
+fastmemo kg query "Alice" --as-of 2026-01-01
+fastmemo kg timeline "Orion"
+fastmemo kg invalidate "Alice" "works_on" "Orion" --ended 2026-03-01
+fastmemo kg stats
 
 # MCP server
-mempalace mcp                        # shows setup command
-mempalace-mcp --palace ~/.mempalace/palace   # run server
+fastmemo mcp                        # shows setup command
+fastmemo-mcp --palace ~/.fastmemo/palace   # run server
 ```
 
 ## MCP Integration (Claude Code / Cursor / etc.)
@@ -67,9 +67,9 @@ Add to your MCP config (`~/.claude/mcp_servers.json` or equivalent):
 
 ```json
 {
-  "mempalace": {
-    "command": "mempalace-mcp",
-    "args": ["--palace", "/home/you/.mempalace/palace"]
+  "fastmemo": {
+    "command": "fastmemo-mcp",
+    "args": ["--palace", "/home/you/.fastmemo/palace"]
   }
 }
 ```
@@ -125,7 +125,7 @@ Deterministic lossy abbreviation (matches Python implementation):
 
 | Layer | Content                      | ~Tokens   | When       |
 | ----- | ---------------------------- | --------- | ---------- |
-| L0    | `~/.mempalace/identity.txt`  | 50-100    | Always     |
+| L0    | `~/.fastmemo/identity.txt`  | 50-100    | Always     |
 | L1    | Top-15 drawers by importance | ~500      | Always     |
 | L2    | Wing/room-scoped recall      | ~300      | On trigger |
 | L3    | Full BM25+cosine search      | Unbounded | Explicit   |
