@@ -1,0 +1,72 @@
+name: Release
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+jobs:
+  release:
+    permissions:
+      contents: write
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: aarch64-macos
+            artifact_name: fastmemo-aarch64-macos
+          # - os: ubuntu-latest
+          #   target: x86_64-linux-gnu
+          #   artifact_name: fastmemo-x86_64-linux
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.15.2
+      - name: Install sqlite3
+        shell: bash
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            sudo apt-get install -y libsqlite3-dev
+            sudo ln -sf /usr/lib/x86_64-linux-gnu/libsqlite3.so /usr/lib/libsqlite3.so
+            sudo ln -sf /usr/lib/x86_64-linux-gnu/libsqlite3.a /usr/lib/libsqlite3.a
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            brew install sqlite3
+          fi
+      - name: Build
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            zig build -Dtarget=${{ matrix.target }} -Doptimize=ReleaseSmall \
+              --search-prefix /usr/lib/x86_64-linux-gnu \
+              --search-prefix /usr
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            zig build -Dtarget=${{ matrix.target }} -Doptimize=ReleaseSmall \
+              --search-prefix $(brew --prefix sqlite3)
+          fi
+      - name: Prepare artifact
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp zig-out/bin/fastmemo "dist/${{ matrix.artifact_name }}"
+          cp zig-out/bin/fastmemo-mcp "dist/${{ matrix.artifact_name }}-mcp"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/*
+  create-release:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
