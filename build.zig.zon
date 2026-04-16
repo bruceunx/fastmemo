@@ -1,6 +1,6 @@
 .{
     .name = .fastmemo,
-    .version = "0.0.0",
+    .version = "3.1.0",
     .fingerprint = 0x558d4752d71d4e9f,
     .minimum_zig_version = "0.15.2",
     .dependencies = .{},

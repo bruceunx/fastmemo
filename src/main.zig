@@ -8,9 +8,9 @@ const graph = @import("graph");
 const aaak = @import("aaak");
 const mining = @import("mining");
 
-const VERSION = "3.1.0-zig";
+const VERSION = "3.1.0";
 const USAGE =
-    \\mempalace v{s} — local AI memory system (Zig port)
+    \\fastmemo v{s} — local AI memory system (Zig port)
     \\
     \\Usage: mempalace <command> [options]
     \\
@@ -181,7 +181,7 @@ pub fn main() !void {
             break :blk @TypeOf(palace.kg.stats() catch unreachable){ .entities = 0, .triples = 0, .active = 0 };
         };
         try stdout.print(
-            \\MemPalace {s}
+            \\FastMemo {s}
             \\Palace: {s}
             \\Drawers: {d}
             \\Wings:   {d}
